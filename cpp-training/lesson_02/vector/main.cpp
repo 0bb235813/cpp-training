@@ -57,7 +57,7 @@ public:
         ++size_;
     }
 
-    T operator[](int index)
+    T& operator[](int index)
     {
         return ptr[index];
     }
