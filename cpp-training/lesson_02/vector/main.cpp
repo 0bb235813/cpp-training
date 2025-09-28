@@ -1,74 +1,74 @@
 #include <cstddef>
 #include <initializer_list>
 #include <iostream>
-#include <memory>
-#include <vector>
-
-using namespace std;
+#include <new>
+#include <utility>
 
 template <typename T>
-class MyVector
+class Vector
 {
 public:
-    MyVector (initializer_list<T> list) 
+    Vector (std::initializer_list<T> list) : size_(list.size()), capacity_(list.size())
     {
-        cout << "DEFAULT CONSTRUCTOP" << endl;
-        size_ = capacity_ = list.size();
-        ptr = make_unique<T[]>(size_);
-        for (int i{}; i < list.size(); ++i)
-            ptr[i] = *(list.begin()+i);
+        ptr = (T*)::operator new(sizeof(T)*capacity_);
+        for (int i{}; i < capacity_; ++i)
+        {
+            new(ptr+i) T(*(list.begin()+i));
+        }
     }
 
-    MyVector (int size)
+    Vector (int size) : size_(size), capacity_(size)
     {
-        size_ = capacity_ = size;
-        ptr = make_unique<T[]>(size_);
+        ptr = (T*)operator new(sizeof(T)*capacity_);
         for (int i{}; i < size; ++i)
-            ptr[i] = 0;
+            new(ptr+i) T();
     }
 
-    MyVector (int size, int value)
+    Vector (int size, T value) : size_(size), capacity_(size)
     {
-        size_ = capacity_ = size;
-        ptr = make_unique<T[]>(size);
+        ptr = (T*)operator new(sizeof(T)*capacity_);
         for (int i{}; i < size; ++i)
-            ptr[i] = value;
+            new(ptr+i) T(value);
     }
 
-    MyVector (const MyVector& other)
+    Vector (const Vector& other) : size_(other.size_), capacity_(other.capacity_)
     {
-        cout << "COPY CONSTRUCTOP" << endl;
-        capacity_ = other.capacity_;
-        size_ = other.size_;
-        ptr = make_unique<T[]>(size_);
+        ptr = (T*)operator new(sizeof(T)*other.capacity_);
         for (int i{}; i < size_; ++i)
-            ptr[i] = other.ptr[i];
+            new(ptr+i) T(other.ptr[i]);
     }
 
-    MyVector (MyVector&& other)
+    Vector (Vector&& other) : size_(other.size_), capacity_(other.capacity_)
     {
-        cout << "MOVE CONSTRUCTOP" << endl;
-        capacity_ = other.capacity_;
-        size_ = other.size_;
-        ptr.swap(other.ptr);
+        ptr = other.ptr;
+        other.ptr = nullptr;
     }
 
     void print()
     {
         for (int i{}; i < size_; ++i)
-            cout << ptr[i] << endl;
+            std::cout << ptr[i] << std::endl;
     }
 
     void push_back(T value) 
     {
         if (capacity_ == size_) vecrotFull();
-        ptr[size_] = value;
+        new(ptr+size_) T(value);
         ++size_;
     }
 
     T operator[](int index)
     {
         return ptr[index];
+    }
+
+    ~Vector ()
+    {
+
+        for (int i{}; i < size_; ++i)
+            ptr[i].~T();
+
+        operator delete(ptr);
     }
 
     size_t size () { return size_; }
@@ -78,22 +78,23 @@ private:
     void vecrotFull()
     {
         capacity_*=2;
-        unique_ptr<T[]> temp = make_unique<T[]>(capacity_);
-        ptr.swap(temp);
-        for (int i{}; i < capacity_; ++i)
+        T* temp = (T*)operator new(sizeof(T)*capacity_);
+        for (int i{}; i < size_; ++i)
         {
-            if (i < size_) ptr[i] = temp[i];
-            else ptr[i] = 0;
+            new(temp+i) T(ptr[i]);
+            //if (i < size_) new(temp+i) T(ptr[i]);
+            //else new(temp+i) T();
         }
+        std::swap(temp, ptr);
+        for (int i{}; i < size_; ++i)
+            temp[i].~T();
+        operator delete(temp);
     }
-    unique_ptr<T[]> ptr;
-    //T* ptr;
+    T* ptr;
     size_t size_{};
     size_t capacity_{};
 };
 
 int main()
 {
-    MyVector<int> vec(MyVector<int>({1,2,3,4,5}));
-    vec.print();
 }
