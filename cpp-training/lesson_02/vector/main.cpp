@@ -19,8 +19,7 @@ public:
                 new(ptr+i) T(*(list.begin()+i));
             }
         } catch (...) {
-            for (int j{}; j < i; ++j)
-                ptr[j].~T();
+            loop(i);
             operator delete(ptr);
             throw;
         }
@@ -34,8 +33,7 @@ public:
             for (; i < capacity_; ++i)
                new(ptr+i) T();
         } catch (...) {
-           for (int j{}; j < i; ++j)
-                ptr[j].~T();
+            loop(i);
             operator delete(ptr);
             throw;
         }
@@ -49,8 +47,7 @@ public:
             for (int i{}; i < capacity_; ++i)
                 new(ptr+i) T(value);
         } catch (...) {
-            for (int j{}; j < i; ++j)
-                ptr[j].~T();
+            loop(i);
             operator delete(ptr);
             throw;
         }
@@ -64,8 +61,7 @@ public:
             for (; i < size_; ++i)
                 new(ptr+i) T(other.ptr[i]);
         } catch (...) {
-            for (int j{}; j < i; ++j)
-                ptr[j].~T();
+            loop(i);
             operator delete(ptr);
             throw;
         }
@@ -96,6 +92,44 @@ public:
         return ptr[index];
     }
 
+    Vector& operator= (const Vector& other)
+    {
+        if (this != &other)
+        {
+            loop(size_);
+            operator delete(ptr);
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            ptr = (T*)operator new(sizeof(Vector)*capacity_);
+            int i{};
+            try {
+                for (; i < size_; ++i)
+                    new(ptr+i) T(other.ptr[i]);
+            } catch (...) {
+                loop(i);
+                operator delete(ptr);
+                throw;
+            }
+        }
+        return *this;
+    }
+    
+    Vector& operator= (Vector&& other) noexcept
+    {
+        if (this != &other)
+        {
+            loop(size_);
+            operator delete(ptr);
+            ptr = other.ptr;
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            other.capacity_ = 0;
+            other.size_ = 0;
+            other.ptr = nullptr;
+        }
+        return *this;
+    }
+
     ~Vector ()
     {
 
@@ -118,8 +152,6 @@ private:
             for (; i < size_; ++i)
             {
                 new(temp+i) T(ptr[i]);
-                //if (i < size_) new(temp+i) T(ptr[i]);
-                //else new(temp+i) T();
             }
         } catch (...) {
             for (int j{}; j < i; ++j)
@@ -132,6 +164,13 @@ private:
             temp[i].~T();
         operator delete(temp);
     }
+
+    void loop(int i)
+    {
+        for (int j{}; j < i; ++j)
+            ptr[j].~T();
+    }
+
     T* ptr;
     size_t size_{};
     size_t capacity_{};
@@ -146,6 +185,8 @@ void test_push_back()
 
     assert(vec.size() == 5);
     assert(vec.capacity() == 8);
+    assert(vec[0] == 0);
+    assert(vec[1] == 0);
     assert(vec[2] == 10);
     assert(vec[3] == 20);
     assert(vec[4] == 30);
@@ -216,9 +257,23 @@ void test()
     try {
         Vector<TestClass> vec(5);
     } catch (const char* e) {
-        std::cout << e << std::endl;
         assert(std::string(e) == "Copy ERROR");
     }
+}
+
+void test_appropriation()
+{
+    Vector<int> vec(5);
+    Vector<int> vec2(10);
+    vec = vec;
+    assert(&vec == &vec);
+    vec = vec2;
+
+    assert(&vec != &vec2);
+    assert(vec.size() == vec2.size());
+    assert(vec.capacity() == vec2.capacity());
+    for (int i{}; i < vec.size(); ++i)
+        assert(vec[i] == vec2[i]);
 }
 
 int main()
@@ -228,6 +283,7 @@ int main()
     test_initializer_list();
     test_push_back();
     test_move_constructor();
+    test_appropriation();
     test();
 
     std::cout << "All tests passed" << std::endl;
