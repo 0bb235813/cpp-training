@@ -19,8 +19,7 @@ public:
                 new(ptr+i) T(*(list.begin()+i));
             }
         } catch (...) {
-            loop(i);
-            operator delete(ptr);
+            deallocate(i);
             throw;
         }
     }
@@ -33,8 +32,7 @@ public:
             for (; i < capacity_; ++i)
                new(ptr+i) T();
         } catch (...) {
-            loop(i);
-            operator delete(ptr);
+            deallocate(i);
             throw;
         }
     }
@@ -47,8 +45,7 @@ public:
             for (int i{}; i < capacity_; ++i)
                 new(ptr+i) T(value);
         } catch (...) {
-            loop(i);
-            operator delete(ptr);
+            deallocate(i);
             throw;
         }
     }
@@ -61,8 +58,7 @@ public:
             for (; i < size_; ++i)
                 new(ptr+i) T(other.ptr[i]);
         } catch (...) {
-            loop(i);
-            operator delete(ptr);
+            deallocate(i);
             throw;
         }
     }
@@ -96,8 +92,7 @@ public:
     {
         if (this != &other)
         {
-            loop(size_);
-            operator delete(ptr);
+            deallocate(size_);
             size_ = other.size_;
             capacity_ = other.capacity_;
             ptr = (T*)operator new(sizeof(Vector)*capacity_);
@@ -106,8 +101,7 @@ public:
                 for (; i < size_; ++i)
                     new(ptr+i) T(other.ptr[i]);
             } catch (...) {
-                loop(i);
-                operator delete(ptr);
+                deallocate(i);
                 throw;
             }
         }
@@ -118,8 +112,7 @@ public:
     {
         if (this != &other)
         {
-            loop(size_);
-            operator delete(ptr);
+            deallocate(size_);
             ptr = other.ptr;
             size_ = other.size_;
             capacity_ = other.capacity_;
@@ -132,11 +125,7 @@ public:
 
     ~Vector ()
     {
-
-        for (int i{}; i < size_; ++i)
-            ptr[i].~T();
-
-        operator delete(ptr);
+        deallocate(size_);
     }
 
     size_t size () const { return size_; }
@@ -165,10 +154,12 @@ private:
         operator delete(temp);
     }
 
-    void loop(int i)
+    void deallocate(int i)
     {
         for (int j{}; j < i; ++j)
             ptr[j].~T();
+
+        operator delete(ptr);
     }
 
     T* ptr;
