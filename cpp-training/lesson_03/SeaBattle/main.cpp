@@ -133,21 +133,9 @@ private:
 
     void shipDrowned(int pos)
     {
-        cout << "shipDrowned" << endl;
         if (positions[pos][0].x == positions[pos][1].x) {
-            cout << "positions[pos][0].y\t" << positions[pos][0].y << endl;
-            cout << "positions[pos].size()\t" << positions[pos].size() << endl;
-            cout << "sum\t" << (positions[pos][0].y + positions[pos].size()) << endl;
-            int n = positions[pos][0].y;
-            int m = positions[pos].size();
-            if (auto el = positions[pos][0].y + positions[pos].size() > -1)
-            {
-                cout << "TRUE " << el << endl;
-            }
-            cout << "horizontal" << endl;
             for (int i = positions[pos][0].y-2; i < positions[pos][0].y + (int)positions[pos].size(); ++i) {
                 for (int j = positions[pos][0].x-1-65; j <= positions[pos][0].x+1-65; ++j) {
-                    cout << "map[j][i]\t" << j << " " << i << endl;
                     if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[j][i] != "X ") {
                         map[j][i] = ". ";
                     }
@@ -155,7 +143,6 @@ private:
             }
         }
         else if (positions[pos][0].x != positions[pos][1].x) {
-            cout << "vertical" << endl;
             for (int i = positions[pos][0].x-1-65; i < positions[pos][0].x-65 + positions[pos].size()+1; ++i) {
                 for (int j = positions[pos][0].y-2; j <= positions[pos][0].y; ++j) {
                     if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[i][j] != "X ")
@@ -163,6 +150,7 @@ private:
                 }
             }
         }
+        positions.erase(positions.begin()+pos);
     }
 
     bool coordinatesCorrect(const Pos pos, int size, bool horizontal)
@@ -209,18 +197,19 @@ int main()
     player1.printBoard();
     player2.printBoard();
 
-    cout << "SHOT 1" << endl;
 
     player1.shot(Pos('A', 1));
     player1.shot(Pos('A', 2));
     player1.shot(Pos('A', 3));
     player1.shot(Pos('A', 4));
 
-    cout << "SHOT 2" << endl;
+    player2.shot(Pos('H', 3));
+    player2.shot(Pos('H', 4));
+    player2.shot(Pos('H', 5));
 
-    //player1.shot(Pos('C', 2));
-    //player1.shot(Pos('C', 3));
-    //player1.shot(Pos('C', 4));
+    player1.shot(Pos('C', 2));
+    player1.shot(Pos('C', 3));
+    player1.shot(Pos('C', 4));
 
     player2.shot(Pos('E', 8));
     player2.shot(Pos('F', 8));
