@@ -7,10 +7,10 @@ class Player
 public:
     void autoPlaceShip();
     bool placeShip(const Pos&, int, bool);
-    void makeShot(const Pos&);
-    void autoShot();
+    ShortResult makeShot(const Pos&);
+    ShortResult autoShot();
     bool endGame();
-    Board& getBoard();
+    const Board& getBoard() const;
 
 private:
     Board board;

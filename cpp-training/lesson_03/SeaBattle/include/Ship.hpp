@@ -7,8 +7,11 @@ class Ship
 public:
     Ship (const std::vector<Pos>& positions);
 
-    std::vector<Pos>& getPositions();
-    std::vector<bool>& getHits();
+    void registerHit(const Pos&);
+    size_t getHitsSize() const;
+
+    const std::vector<Pos>& getPositions();
+    const std::vector<bool>& getHits();
 
 private:
     std::vector<Pos> positions;

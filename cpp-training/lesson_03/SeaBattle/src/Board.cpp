@@ -1,33 +1,28 @@
 #include "../include/Board.hpp"
 #include <algorithm>
-#include <iostream>
 #include <cstdlib>
-#include <vector>
+#include <array>
 
 Board::Board() {
-    map.resize(10, std::vector<std::string>(10, "  "));
+    for (auto& el : map) el.fill(Cell::Empty);
 }
-
 
 bool Board::addShip(const Pos& pos, int size, bool horizontal)
 {
-    if (!coordinatesCorrect(pos, size, horizontal)) {
-        std::cout << "Incorrect coordinate" << std::endl;
-        return false;
-    }
+    if (!coordinatesCorrect(pos, size, horizontal)) return false;
     std::vector<Pos> p;
     std::vector<bool> b;
     if (horizontal)
     {
         for (int i{}; i < size; ++i) {
-            map[pos.x-65][pos.y+i-1] = "S ";
+            map[pos.x-65][pos.y+i-1] = Cell::Ship;
             p.push_back(Pos(pos.x, pos.y+i));
             b.push_back(true);
         }
     }
     else {
         for (int i{}; i < size; ++i) {
-            map[pos.x+i-65][pos.y-1] = "S ";
+            map[pos.x+i-65][pos.y-1] = Cell::Ship;
             p.push_back(Pos(pos.x+i, pos.y));
             b.push_back(true);
         }
@@ -38,69 +33,31 @@ bool Board::addShip(const Pos& pos, int size, bool horizontal)
     return true;
 }
 
-void Board::printBoard()
+Cell Board::cellAt(int x, int y) const
 {
-    std::cout << "  ";
-    for (int i = 1; i < 11; ++i)
-        std::cout << i << ' ';
-    std::cout << std::endl;
-    for (int i{}; i < 10; ++i)
-    {
-        std::cout << (char)(i+65) << ' ';
-        for (int j{}; j < 10; ++j)
-            std::cout << map[i][j];
-
-        std::cout << std::endl;
-    }
+    return map[x][y];
 }
 
-void Board::fogOfWar()
-{
-    std::cout << "  ";
-    for (int i = 1; i < 11; ++i)
-        std::cout << i << ' ';
-    std::cout << std::endl;
-    for (int i{}; i < 10; ++i)
-    {
-        std::cout << (char)(i+65) << ' ';
-        for (int j{}; j < 10; ++j)
-        {
-            if(map[i][j] == "S ") std::cout << "  ";
-            else std::cout << map[i][j];
-        }
-
-        std::cout << std::endl;
-    }
-}
-
-bool Board::shot(const Pos& pos)
+ShortResult Board::shot(const Pos& pos)
 {
     if (pos.x-65 > 10 || pos.x-65 < 0 || pos.y > 10 || pos.y < 1) {
-        std::cout << "Неверные координы выстрела" << std::endl;
-        return false;
+        return ShortResult::Invalid;
     }
-    if (map[pos.x-65][pos.y-1] == "S ")
+    if (map[pos.x-65][pos.y-1] == Cell::Ship)
     {
-        regShot(pos);
-        map[pos.x-65][pos.y-1] = "X ";
-        std::cout << "Ранил" << std::endl;
-        return true;
+        map[pos.x-65][pos.y-1] = Cell::Hit;
+        if (regShot(pos)) return ShortResult::Kill;
+        return ShortResult::Hit;
     }
-    else if (map[pos.x-65][pos.y-1] == "  ")
+    else if (map[pos.x-65][pos.y-1] == Cell::Empty)
     {
-        map[pos.x-65][pos.y-1] = "O ";
-        std::cout << "Мимо" << std::endl;
-        return true;
+        map[pos.x-65][pos.y-1] = Cell::Miss;
+        return ShortResult::Miss;
     }
-    return false;
-}
-
-
-void Board::printPos()
-{
-    for (int i{}; i < ships.size(); ++i)
-        for (auto j : ships[i].getPositions())
-            std::cout << j.x-65 << " " << j.y << std::endl;
+    else if (map[pos.x-65][pos.y-1] == Cell::Halo) return ShortResult::Miss;
+    else if (map[pos.x-65][pos.y-1] == Cell::Hit) return ShortResult::Hit;
+    else if (map[pos.x-65][pos.y-1] == Cell::Empty) return ShortResult::Miss;
+    return ShortResult::Miss;
 }
 
 void Board::autoAddShip()
@@ -124,14 +81,14 @@ void Board::randAddShip()
     if (horizontal)
     {
         for (int i{}; i < size; ++i) {
-            map[pos.x-65][pos.y+i-1] = "S ";
+            map[pos.x-65][pos.y+i-1] = Cell::Ship;
             p.push_back(Pos(pos.x, pos.y+i));
             b.push_back(true);
         }
     }
     else {
         for (int i{}; i < size; ++i) {
-            map[pos.x+i-65][pos.y-1] = "S ";
+            map[pos.x+i-65][pos.y-1] = Cell::Ship;
             p.push_back(Pos(pos.x+i, pos.y));
             b.push_back(true);
         }
@@ -143,34 +100,35 @@ bool Board::gameOver() {
     return ships.empty();
 }
 
-bool Board::fullShip()
+bool Board::fullShip() const
 {
     int four{}, three{}, two{}, one{};
     for (int i{}; i < ships.size(); ++i) {
-        if (ships[i].getHits().size() == 4) ++four;
-        if (ships[i].getHits().size() == 3) ++three;
-        if (ships[i].getHits().size() == 2) ++two;
-        if (ships[i].getHits().size() == 1) ++one;
+        if (ships[i].getHitsSize() == 4) ++four;
+        if (ships[i].getHitsSize() == 3) ++three;
+        if (ships[i].getHitsSize() == 2) ++two;
+        if (ships[i].getHitsSize() == 1) ++one;
     }
     if (four != 1 || three != 2 || two != 3 || one != 4) return false;
     return true;
 }
 
-void Board::regShot(const Pos& pos)
+bool Board::regShot(const Pos& pos)
 {
     for (int i{}; i < ships.size(); ++i) {
         for (int j{}; j < ships[i].getPositions().size(); ++j) {
             if (ships[i].getPositions()[j] == pos) {
-                ships[i].getHits()[j] = false;
+                ships[i].registerHit(pos);
                 if (*max_element(ships[i].getHits().begin(), ships[i].getHits().end()) == 0)
                 {
-                    std::cout << "Убил" << std::endl;
                     shipDrowned(i);
+                    return true;
                 }
                 break;
             }
         }
     }
+    return false;
 }
 
 void Board::shipDrowned(int pos)
@@ -180,8 +138,8 @@ void Board::shipDrowned(int pos)
     {
         for (int i = ship[0].y-2; i < ship[0].y + (int)ship.size(); ++i) {
             for (int j = ship[0].x-1-65; j <= ship[0].x+1-65; ++j) {
-                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[j][i] != "X ") {
-                    map[j][i] = ". ";
+                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[j][i] != Cell::Hit) {
+                    map[j][i] = Cell::Halo;
                 }
             }
         }
@@ -189,8 +147,8 @@ void Board::shipDrowned(int pos)
     else if (ship[0].x == ship[1].x) {
         for (int i = ship[0].y-2; i < ship[0].y + (int)ship.size(); ++i) {
             for (int j = ship[0].x-1-65; j <= ship[0].x+1-65; ++j) {
-                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[j][i] != "X ") {
-                    map[j][i] = ". ";
+                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[j][i] != Cell::Hit) {
+                    map[j][i] = Cell::Halo;
                 }
             }
         }
@@ -198,8 +156,8 @@ void Board::shipDrowned(int pos)
     else if (ship[0].x != ship[1].x) {
         for (int i = ship[0].x-1-65; i < ship[0].x-65 + (int)ship.size()+1; ++i) {
             for (int j = ship[0].y-2; j <= ship[0].y; ++j) {
-                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[i][j] != "X ")
-                    map[i][j] = ". ";
+                if ( i >= 0 && i < 10 && j >= 0 && j < 10 && map[i][j] != Cell::Hit)
+                    map[i][j] = Cell::Halo;
             }
         }
     }
@@ -232,7 +190,7 @@ bool Board::coordinatesCorrect(const Pos& pos, int size, bool horizontal)
         for (int i = pos.x-1-65; i < pos.x+size+1-65; ++i) {
             for (int j = pos.y-2; j < pos.y+1; ++j) {
                 if (i >= 0 && i < 10 && j >= 0 && j < 10) {
-                    if (map[i][j] == "S ") return false;
+                    if (map[i][j] == Cell::Ship) return false;
                 }
             }
         }
@@ -243,7 +201,7 @@ bool Board::coordinatesCorrect(const Pos& pos, int size, bool horizontal)
         for (int i = pos.y-2; i < pos.y+size; ++i) {
             for (int j = pos.x-1-65; j < pos.x+2-65; ++j) {
                 if (i >= 0 && i < 10 && j >= 0 && j < 10)
-                    if (map[j][i] == "S ") return false;
+                    if (map[j][i] == Cell::Ship) return false;
             }
         }
     }

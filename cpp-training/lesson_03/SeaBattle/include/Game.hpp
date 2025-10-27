@@ -1,5 +1,6 @@
 #pragma once
 #include "Player.hpp"
+#include "ConsoleView.hpp"
 
 class Game
 {
@@ -10,4 +11,5 @@ public:
 private:
     Player player1;
     Player player2;
+    ConsoleView view;
 };

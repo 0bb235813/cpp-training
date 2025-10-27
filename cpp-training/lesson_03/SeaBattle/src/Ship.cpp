@@ -2,12 +2,24 @@
 
 Ship::Ship(const std::vector<Pos>& positions) : positions(positions), hits(positions.size(), true) {}
 
-std::vector<Pos>& Ship::getPositions()
+const std::vector<Pos>& Ship::getPositions()
 {
     return positions;
 }
 
-std::vector<bool>& Ship::getHits()
+void Ship::registerHit(const Pos& pos)
+{
+    for (int i{}; i < positions.size(); ++i)
+        if (positions[i] == pos)
+            hits[i] = false;
+}
+
+size_t Ship::getHitsSize() const
+{
+    return hits.size();
+}
+
+const std::vector<bool>& Ship::getHits()
 {
     return hits;
 }

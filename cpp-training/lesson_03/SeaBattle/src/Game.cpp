@@ -12,8 +12,8 @@ void Game::start()
         char x;
         int y, size;
         bool h;
-        player1.getBoard().printBoard();
-        player2.getBoard().fogOfWar();
+        view.printBoard(player1);
+        view.printBoard(player2);
         std::cout << "Введите координаты для размещения корабля" << std::endl;
         std::cin >> x >> y >> size >> h;
         player1.placeShip(Pos(x, y), size, h);
@@ -22,13 +22,13 @@ void Game::start()
 
     while(!player1.endGame() && !player2.endGame())
     {
-        player1.getBoard().printBoard();
-        player2.getBoard().fogOfWar();
+        view.printBoard(player1);
+        view.printBoard(player2);
         std::cout << "Введите координаты для выстрела" << std::endl;
         char x;
         int y;
         std::cin >> x >> y;
-        player2.makeShot(Pos(x, y));
+        view.printShotResult(player2.makeShot(Pos(x, y)));
         std::cout << "\033c";
         player1.autoShot();
     }
